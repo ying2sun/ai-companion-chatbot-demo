@@ -506,8 +506,27 @@
   "use strict";
 
   // Update this once the backend is deployed somewhere other than localhost.
-  const API_BASE = "https://ai-companion-chatbot-demo.onrender.com";
+  const API_BASE = "http://localhost:8000";
   const MAX_RECORD_SECONDS = 60;
+
+  // A genuinely silent, correctly-formed WAV (8kHz mono 8-bit, 1 sample).
+  // Playing this synchronously inside a real user gesture (tap, click) is
+  // what unlocks later programmatic audio.play() calls on browsers with
+  // strict autoplay policies (notably iOS Safari). Without this, the AI's
+  // spoken reply can silently fail to play, since by the time the /chat
+  // fetch resolves, the browser may no longer count it as part of the
+  // original gesture.
+  const SILENT_WAV = "data:audio/wav;base64,UklGRiUAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQEAAACA";
+  let audioUnlocked = false;
+
+  function unlockAudioPlayback() {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    try {
+      const unlock = new Audio(SILENT_WAV);
+      unlock.play().catch(function () { /* best effort, ignore rejection */ });
+    } catch (e) { /* best effort */ }
+  }
 
   let state = "idle"; // idle | recording | thinking | speaking
   let sessionId = null;
@@ -801,6 +820,7 @@
   async function sendText() {
     const text = textInput.value.trim();
     if (!text || state !== "idle") return;
+    unlockAudioPlayback();
     textInput.value = "";
     autoResize();
 
@@ -897,6 +917,7 @@
 
   function handleOrbTap() {
     if (state === "thinking") return;
+    unlockAudioPlayback();
     if (state === "recording") {
       stopRecording();
       return;

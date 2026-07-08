@@ -1,16 +1,19 @@
 # AI Companion Chatbot Demo
 
 A standalone, voice-first conversational AI backend and frontend: a layered
-system-prompt architecture, a two-tier safety guardrail, and a full speech
-in, speech out pipeline, built to demonstrate AI engineering, not to ship a
-product.
+system-prompt architecture, a two-tier safety guardrail, a full speech in,
+speech out pipeline, and an evaluation framework to score it, built to
+demonstrate AI engineering, not to ship a product.
+
+**Live demo:** https://ying2sun.github.io/ai-companion-chatbot-demo/
 
 ## About
 
 This is a demo for the AI chatbot part of [PéiNín
-Foundation](https://peininfoundation.org/). The real product is at
-pre-launch stage; you can check out a web test version only, not the
-production experience, at
+Foundation](https://peininfoundation.org/). I'm the AI engineer building that
+system, and put this independent, from-scratch demo together to share
+similar work publicly. The real product is at pre-launch stage; you can
+check out a web test version only, not the production experience, at
 [peinin-senior-care.vercel.app](https://peinin-senior-care.vercel.app/).
 
 ## How it works
@@ -110,6 +113,93 @@ tracked independently of where requests originate, acts as a hard ceiling
 on total usage regardless of pattern. Either check can reject a request on
 its own; neither depends on the other being present.
 
+## Evaluation
+
+Testing an LLM-backed feature isn't like testing ordinary code. There's no
+single expected output to assert equality against, the same input can
+produce many reasonable replies, and some of the things that actually
+matter (did the reply acknowledge the person's feeling before offering
+advice, did it avoid correcting them) aren't the kind of thing a regex can
+verify. This project's evaluation approach is built around that difference.
+
+### Two kinds of checks, for two kinds of questions
+
+Some rubric items have a mechanically checkable answer: does the reply
+contain markdown formatting, does it ask more than one question, did the
+safety layer fire on a message written specifically to trigger it. Those
+get plain functions, `eval/checks.py` in this repo, fast, deterministic,
+and free to run as often as needed.
+
+Other items are inherently a judgment call: does the first sentence read as
+acknowledging a feeling rather than jumping to advice, does the tone feel
+warm rather than scripted. No pattern list captures that reliably. Those
+need a second model to read the conversation and score it against a
+rubric, an LLM judge. Running both kinds together means the parts of
+quality that are mechanically checkable get checked cheaply and reliably,
+and the parts that genuinely require judgment get evaluated by something
+capable of it.
+
+### Why the judge has to be a different model from the one being graded
+
+If the same model family were both the system under test and its own
+judge, the judge could end up subtly favoring outputs that sound like its
+own style, a self-preference bias, rather than genuinely grading against
+the rubric. This project's chat model is Gemini; the planned judge is a
+different model family entirely, specifically so the grading is
+independent of the thing being graded, the same principle behind having a
+second person review work rather than letting someone grade their own
+exam.
+
+### Validating the judge itself, before trusting it
+
+A judge is only useful if there's actual evidence it agrees with what a
+careful human reviewer would say, not just evidence that it agrees with
+itself. The standard way to check this: hand-label a small set of example
+conversations first (a gold set), have the judge score the same
+conversations, then compare the two sets of labels.
+
+Simple percent agreement is misleading here. If 95% of ordinary
+conversations are trivially fine on some item, a judge that says "pass"
+on every single turn also achieves 95% agreement, without having actually
+evaluated anything. Cohen's kappa corrects for this: it measures how much
+agreement exceeds what pure chance would already produce given each
+rater's overall tendencies. A kappa near zero means a judge added no real
+signal even when raw agreement looked strong. A kappa above roughly 0.6 is
+generally treated as strong enough evidence to trust that judge's scores
+going forward.
+
+### Severity, not one blended score
+
+Not every failure matters equally. A reply that runs slightly longer than
+ideal is a different category of problem from one that misses language
+associated with someone in crisis. This project tags every check with a
+severity, mirroring the same three-tier idea used in the runtime guardrail
+itself: safety-critical failures block release outright, major failures
+are held to a pass-rate threshold, minor failures are tracked over time
+without blocking anything. A single averaged score would bury a rare but
+serious failure inside a sea of harmless ones.
+
+### What this demonstrates, and what it deliberately excludes
+
+This evaluation framework is a demo of the real evaluation system I
+designed for PéiNín's chatbot: the same hybrid deterministic-plus-judge
+structure, the same severity model, the same kappa-based judge validation.
+What's here is deliberately not a copy of that system. Every test case,
+example conversation, and finding in this repository was written fresh for
+this demo, none of it is drawn from real conversations, real test phrases,
+or real findings from the production system. Some of what a real
+evaluation run surfaces is exactly the kind of information that shouldn't
+be public regardless of where it comes from, and none of it is needed to
+demonstrate the methodology itself.
+
+### Status
+
+| Piece | Status |
+|---|---|
+| Deterministic checks (`eval/checks.py`) | Complete, runnable now with no API key |
+| Gold-set-validated LLM judge | Planned |
+| Kappa validator | Planned |
+
 ## Architecture
 
 | Layer | Choice | Notes |
@@ -120,6 +210,7 @@ its own; neither depends on the other being present.
 | Text-to-speech | MiniMax Speech-02-HD | Multiple voice and tone combinations |
 | Rate limiting | slowapi | Per-IP limit plus an independent global daily cap |
 | Frontend | Plain HTML/CSS/JS | No build step, no framework |
+| Hosting | Render (backend) + GitHub Pages (frontend) | Free tiers |
 
 ## Project structure
 
@@ -130,6 +221,8 @@ peinin-ai-demo/
 │   │   └── chat.py          # the /chat endpoint
 │   ├── core/
 │   │   └── limiter.py       # rate limiting
+│   ├── eval/
+│   │   └── checks.py        # deterministic evaluation checks
 │   ├── llm/
 │   │   ├── client.py        # Gemini integration
 │   │   ├── guardrails.py    # safety layer
@@ -146,8 +239,9 @@ peinin-ai-demo/
 │   ├── main.py
 │   ├── requirements.txt
 │   └── .env.example
-├── frontend/                 # in progress
-├── postman/                  # test collection, see below
+├── docs/                     # frontend, served directly by GitHub Pages
+│   └── index.html
+├── postman/                  # test collection, see Testing below
 ├── .gitignore
 └── README.md
 ```
@@ -172,6 +266,12 @@ uvicorn main:app --reload --port 8000
 `GET /health` should return `{"status": "ok"}`. FastAPI also serves
 interactive API docs at `/docs` once the server is running.
 
+The frontend is a single static file, `docs/index.html`. To run it against
+a local backend, open it directly in a browser and make sure the
+`API_BASE` constant near the top of its script points at
+`http://localhost:8000`. Against the deployed backend, it's already
+pointed there, that's what's live at the URL at the top of this README.
+
 ## API
 
 | Endpoint | Method | Purpose |
@@ -191,13 +291,16 @@ input validation, session continuity, and rate limiting lives in
 `postman/`. Import both files, point the environment's `base_url` at your
 running server, and run the collection top to bottom.
 
+For the evaluation checks specifically, `python eval/checks.py` runs a full
+self-test with built-in fixture cases and needs no API key at all.
+
 ## Status
 
 | Component | Status |
 |---|---|
-| Backend | Complete |
-| Frontend | In progress |
-| Deployment | Not yet deployed |
+| Backend | Complete, deployed |
+| Frontend | Complete, deployed |
+| Evaluation | In progress, see Evaluation above |
 
 ## Scope and boundaries
 

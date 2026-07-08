@@ -505,8 +505,15 @@
 (function () {
   "use strict";
 
-  // Update this once the backend is deployed somewhere other than localhost.
-  const API_BASE = "http://localhost:8000";
+  // Automatically uses the local backend when running on localhost, and
+  // the deployed backend everywhere else (GitHub Pages included). This
+  // exists specifically so a future local-testing edit can't silently
+  // regress the deployed version, or vice versa, no single line to
+  // remember to swap back.
+  const IS_LOCAL = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+  const API_BASE = IS_LOCAL
+    ? "http://localhost:8000"
+    : "https://ai-companion-chatbot-demo.onrender.com";
   const MAX_RECORD_SECONDS = 60;
 
   // A genuinely silent, correctly-formed WAV (8kHz mono 8-bit, 1 sample).

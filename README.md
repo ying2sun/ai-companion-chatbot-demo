@@ -12,10 +12,9 @@ hosting tier that goes to sleep after inactivity and has to wake back up)*
 
 ## About
 
-PéiNín Foundation is a 501(c)(3) nonprofit organization building a
-voice-first AI companion app for Mandarin- and Cantonese-speaking seniors.
 This is a demo for the AI chatbot part of [PéiNín
-Foundation](https://peininfoundation.org/). I'm the AI engineer building
+Foundation](https://peininfoundation.org/). PéiNín Foundation is a 501(c)(3) nonprofit organization building a
+voice-first AI companion app for Mandarin- and Cantonese-speaking seniors. I'm the AI engineer building
 that system, and put this independent, from-scratch demo together to share
 similar work publicly. The real product is at pre-launch stage. You can
 check out an early web test build at

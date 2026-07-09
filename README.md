@@ -174,8 +174,7 @@ designed for PéiNín's production chatbot: hybrid deterministic-plus-judge
 checks, the same severity model, the same kappa-based validation. Every
 test case, conversation, and finding here was written fresh for this
 demo. Nothing is drawn from real conversations or real production
-findings, which are exactly the kind of material that should not be
-public. One further boundary worth naming: replies grounded by live
+findings. One further boundary worth naming: replies grounded by live
 search are not independently fact-verified in this demo. That
 verification layer is deliberately out of scope here.
 

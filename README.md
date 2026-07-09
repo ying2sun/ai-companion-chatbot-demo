@@ -6,6 +6,7 @@ speech out pipeline, and an evaluation framework to score it, built to
 demonstrate AI engineering, not to ship a product.
 
 **Live demo:** https://ying2sun.github.io/ai-companion-chatbot-demo/
+
 *(the first message may take up to a minute, the server is on a free
 hosting tier that goes to sleep after inactivity and has to wake back up)*
 

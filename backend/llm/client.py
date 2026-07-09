@@ -23,8 +23,6 @@ from google.genai import types
 from dotenv import load_dotenv
 from fastmcp import Client as MCPClient
 
-from core.env import clean_env_secret
-
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -34,7 +32,7 @@ DEFAULT_MODEL = "gemini-3-flash-preview"
 _MAX_RETRIES = 3
 _RETRY_BASE_WAIT = 2  # seconds
 
-_client = genai.Client(api_key=clean_env_secret(os.getenv("GEMINI_API_KEY")))
+_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Google Search grounding tool. google_search_retrieval with
 # DynamicRetrievalConfig is hard-deprecated for Gemini 2.0+, only

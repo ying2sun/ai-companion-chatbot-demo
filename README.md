@@ -54,8 +54,8 @@ MiniMax TTS ──▶ reply text + audio + guardrail metadata
 
 - **Validated LLM-as-Judge evaluation.** A hybrid framework: deterministic
   checks (`eval/checks.py`, runnable with no API key) for mechanically
-  verifiable items, plus a cross-family LLM judge (the judge is Claude,
-  the system under test is Gemini) validated against a 27-turn
+  verifiable items, plus a cross-family LLM judge (the judge is Claude Sonnet 5,
+  the system under test is Gemini 3 flash preview) validated against a 27-turn
   hand-labeled gold set. On the rubric item with real statistical
   support, tone-persona match, the judge reached kappa = 0.899 (n = 27,
   one disagreement). The gold set's own labels were independently
@@ -174,8 +174,7 @@ designed for PéiNín's production chatbot: hybrid deterministic-plus-judge
 checks, the same severity model, the same kappa-based validation. Every
 test case, conversation, and finding here was written fresh for this
 demo. Nothing is drawn from real conversations or real production
-findings, which are exactly the kind of material that should not be
-public. One further boundary worth naming: replies grounded by live
+findings. One further boundary worth naming: replies grounded by live
 search are not independently fact-verified in this demo. That
 verification layer is deliberately out of scope here.
 
@@ -249,7 +248,7 @@ usage is spread.
 | Speech-to-text | Groq (Whisper large-v3) | Managed API, no cold start |
 | Text-to-speech | MiniMax Speech-02-HD | Multiple voice and tone combinations |
 | Rate limiting | slowapi | Per-IP limit plus an independent global daily cap |
-| Frontend | Plain HTML/CSS/JS | No build step, no framework |
+| Frontend | Single-file HTML (CSS and JS embedded) | No build step, no framework |
 | Hosting | Render (backend) + GitHub Pages (frontend) | Free tiers |
 
 ## Project structure
@@ -354,11 +353,11 @@ it.
 in memory only while the tab is open and the session is active. Tab
 close, a 30-minute idle timeout, or a server restart clears it. Server
 logs record only metadata (session IDs, timing, character counts), never
-message or reply text. For a no-login, try-it-once demo this is exactly
+message or reply text, the
+server's own logs don't reveal what anyone said. For a no-login, try-it-once demo this is exactly
 enough. For something people depend on daily, it would be the first
 thing to change.
 
 ## License
 
-Not currently licensed for reuse. If you would like to use any of this,
-open an issue.
+All rights reserved. Shared for demonstration only, not licensed for reuse or redistribution.

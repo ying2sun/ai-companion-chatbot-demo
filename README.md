@@ -54,8 +54,8 @@ MiniMax TTS ──▶ reply text + audio + guardrail metadata
 
 - **Validated LLM-as-Judge evaluation.** A hybrid framework: deterministic
   checks (`eval/checks.py`, runnable with no API key) for mechanically
-  verifiable items, plus a cross-family LLM judge (the judge is Claude,
-  the system under test is Gemini) validated against a 27-turn
+  verifiable items, plus a cross-family LLM judge (the judge is Claude Sonnet 5,
+  the system under test is Gemini 3 flash preview) validated against a 27-turn
   hand-labeled gold set. On the rubric item with real statistical
   support, tone-persona match, the judge reached kappa = 0.899 (n = 27,
   one disagreement). The gold set's own labels were independently

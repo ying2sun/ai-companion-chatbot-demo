@@ -21,6 +21,9 @@ from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types
 from dotenv import load_dotenv
+from fastmcp import Client as MCPClient
+
+from core.env import clean_env_secret
 
 load_dotenv()
 
@@ -31,13 +34,25 @@ DEFAULT_MODEL = "gemini-3-flash-preview"
 _MAX_RETRIES = 3
 _RETRY_BASE_WAIT = 2  # seconds
 
-_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+_client = genai.Client(api_key=clean_env_secret(os.getenv("GEMINI_API_KEY")))
 
 # Google Search grounding tool. google_search_retrieval with
 # DynamicRetrievalConfig is hard-deprecated for Gemini 2.0+, only
 # google_search is supported. The system prompt (prompts.py) is the only
 # lever that influences when the model decides to search.
 _SEARCH_TOOL = types.Tool(google_search=types.GoogleSearch())
+
+# Local MCP server (mcp_tools/units_server.py), launched as a subprocess
+# over stdio for the duration of each call. The google-genai SDK's MCP
+# support is currently marked experimental by Google, worth knowing if
+# this ever misbehaves, it's a newer code path than the rest of this
+# file. A fresh Client is constructed per call rather than sharing one
+# instance across requests, since this app can serve concurrent
+# requests and a shared client's connection isn't meant to be entered
+# from multiple calls at once. A production version would want a
+# persistent connection pool instead of paying subprocess startup cost
+# on every single turn, a reasonable next step, not done here.
+_UNITS_MCP_SCRIPT = os.path.join(os.path.dirname(__file__), "..", "mcp_tools", "units_server.py")
 
 # Max source URLs to extract from grounding_metadata and return to
 # chat.py. Surfaced as chips only when the person explicitly asks for a
@@ -157,20 +172,23 @@ async def _call_once(
     """Single attempt at the Gemini API. No retry logic here."""
     system_instruction, contents = _convert_messages(messages)
 
-    config = types.GenerateContentConfig(
-        system_instruction=system_instruction or None,
-        max_output_tokens=max_tokens,
-        temperature=temperature,
-        top_p=0.9,
-        tools=[_SEARCH_TOOL],
-        thinking_config=types.ThinkingConfig(thinking_budget=0),
-    )
+    units_mcp_client = MCPClient(_UNITS_MCP_SCRIPT)
 
-    response = await _client.aio.models.generate_content(
-        model=model,
-        contents=contents,
-        config=config,
-    )
+    async with units_mcp_client:
+        config = types.GenerateContentConfig(
+            system_instruction=system_instruction or None,
+            max_output_tokens=max_tokens,
+            temperature=temperature,
+            top_p=0.9,
+            tools=[_SEARCH_TOOL, units_mcp_client.session],
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        )
+
+        response = await _client.aio.models.generate_content(
+            model=model,
+            contents=contents,
+            config=config,
+        )
 
     finish_reason = "unknown"
     if response.candidates:

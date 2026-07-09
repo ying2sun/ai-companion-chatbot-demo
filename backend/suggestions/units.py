@@ -75,6 +75,27 @@ _DETECTORS: list[tuple[re.Pattern, str, Callable[[float], str]]] = [
 # contradictory once rounding is involved. Tolerance is keyed by the target
 # unit and sized to absorb ordinary rounding.
 _TARGET_UNIT = {"C": "F", "F": "C", "kg": "lb", "lb": "kg", "km": "miles", "miles": "km", "cm": None}
+
+# Built from _DETECTORS rather than duplicated, so there's exactly one
+# place mapping a unit to its converter function.
+_CONVERTER_BY_UNIT = {from_unit: fn for _pattern, from_unit, fn in _DETECTORS}
+
+
+def convert(value: float, from_unit: str) -> dict:
+    """
+    Public conversion entry point. Used by detect_unit_chips() below
+    (scanning the AI's own reply text after the fact) and by
+    mcp_tools/units_server.py (letting the model call this directly
+    while generating a reply, instead of after). Same math either way,
+    this is the one place it lives.
+    """
+    if from_unit not in _CONVERTER_BY_UNIT:
+        return {"error": f"Unsupported unit '{from_unit}'. Supported: {', '.join(_CONVERTER_BY_UNIT)}"}
+    try:
+        result = _CONVERTER_BY_UNIT[from_unit](float(value))
+    except Exception as exc:
+        return {"error": f"Conversion failed: {exc}"}
+    return {"from_value": value, "from_unit": from_unit, "result": result}
 _COUNTERPART_TOL = {"C": 1.0, "F": 2.0, "kg": 0.5, "lb": 1.0, "km": 0.3, "miles": 0.3}
 
 

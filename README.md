@@ -248,7 +248,7 @@ usage is spread.
 | Speech-to-text | Groq (Whisper large-v3) | Managed API, no cold start |
 | Text-to-speech | MiniMax Speech-02-HD | Multiple voice and tone combinations |
 | Rate limiting | slowapi | Per-IP limit plus an independent global daily cap |
-| Frontend | Plain HTML/CSS/JS | No build step, no framework |
+| Frontend | Plain HTML | No build step, no framework |
 | Hosting | Render (backend) + GitHub Pages (frontend) | Free tiers |
 
 ## Project structure
@@ -353,7 +353,8 @@ it.
 in memory only while the tab is open and the session is active. Tab
 close, a 30-minute idle timeout, or a server restart clears it. Server
 logs record only metadata (session IDs, timing, character counts), never
-message or reply text. For a no-login, try-it-once demo this is exactly
+message or reply text, the
+server's own logs don't reveal what anyone said. For a no-login, try-it-once demo this is exactly
 enough. For something people depend on daily, it would be the first
 thing to change.
 

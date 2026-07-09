@@ -10,21 +10,21 @@ structure, section headings, and design rules are reproduced because they
 are the engineering pattern being showcased, but every sentence here is
 freshly written for this demo.
 
-What's different from the production version, and why:
-  - Single English track. Production branches every string on Mandarin vs.
-    Cantonese; this demo has one language, so that branching is removed
-    rather than carried over as dead code.
-  - No PROMPT_VERSION-triggered history wipe. Production bumps a version
-    string to force-clear a Supabase-backed conversation history table when
-    a prompt change conflicts with prior sessions. This demo has no
-    persistent history (in-memory, per-session only), so there is nothing
-    to wipe. PROMPT_VERSION is kept as a plain label for the debug panel,
-    it has no functional effect here.
-  - The character-count brevity rule (80 Chinese characters, sized to about
-    15 seconds of spoken audio) becomes a sentence-count rule (three
-    sentences or fewer), matching the project's own stated constraint
-    rather than trying to recompute an equivalent character budget for a
-    different language and syllable structure.
+What's different from a multi-language production version, and why:
+  - Single English track. A multi-language version would branch every
+    string per language; this demo has one language, so that branching
+    is removed rather than carried over as dead code.
+  - No prompt-version-triggered history wipe. A system with persistent
+    history might bump a version string to force-clear stored
+    conversation history when a prompt change conflicts with prior
+    sessions. This demo has no persistent history (in-memory,
+    per-session only), so there is nothing to wipe. PROMPT_VERSION is
+    kept as a plain label for the debug panel, it has no functional
+    effect here.
+  - The brevity rule here is a straightforward sentence-count rule
+    (three sentences or fewer), sized to what someone can take in
+    through spoken audio without losing the thread, matching the
+    project's own stated constraint.
   - The "things you remember about this person" layer still exists but will
     usually render empty in the demo, since there's no persistent profile
     enrichment pipeline writing to it. That's intentional graceful
@@ -211,13 +211,13 @@ def _build_enrichment_block(profile: dict) -> str:
     Returns "" when there's nothing to inject, which is the expected case
     for most demo sessions, there's no persistent profile-enrichment
     pipeline writing to interests / family_notes / medication_reminders in
-    this build. If the testing panel injects sample values for a session,
-    this block will render them exactly as production's version does.
+    this build. The testing panel can inject sample values for a session
+    if you want to see this block render.
 
-    Medication names only, never dosage or timing, for the same reason as
-    production: the base prompt forbids medical advice, and dosage context
-    would invite the model to volunteer it anyway. The disclaimer line
-    re-asserts the medical rule at the point of injection.
+    Medication names only, never dosage or timing: the base prompt
+    forbids medical advice, and dosage context would invite the model
+    to volunteer it anyway. The disclaimer line re-asserts the medical
+    rule at the point of injection.
     """
     interests_list = profile.get("interests") or []
     interests = ", ".join(str(i).strip() for i in interests_list if str(i).strip())
@@ -261,10 +261,9 @@ def build_memory_layer(profile: dict) -> str:
     """
     Assemble the per-session memory layer.
 
-    `profile` here is the demo's in-memory session dict, not a Supabase
+    `profile` here is the demo's in-memory session dict, not a database
     row. Fields not provided (no emergency contact, no location, no
-    enrichment data) fall back gracefully, matching production's own
-    fallback behavior for an empty or new profile.
+    enrichment data) fall back gracefully to sensible defaults.
     """
     contacts = profile.get("emergency_contacts", [])
     primary = contacts[0] if contacts else {}

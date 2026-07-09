@@ -1,12 +1,9 @@
 """
-backend/tts/google_service.py
--------------------------------
-MiniMax Speech-02-HD integration for the demo. Same API, same US West
-endpoint, same retry and fallback design as production. What changed:
-this demo has one language (English), so the voice map drops the
-language dimension entirely (6 voices: persona x gender, instead of
-production's 12: language x persona x gender), rather than keeping
-Mandarin/Cantonese branches that would never be exercised.
+backend/tts/minimax_service.py
+--------------------------------
+MiniMax Speech-02-HD integration for the demo. This demo has one
+language (English), so the voice map is just persona x gender (6
+voices total), with no language dimension to branch on.
 
 Voice IDs below are the ones you picked from MiniMax's English voice
 library, confirmed to exist on Speech-02-HD's English variants (US, UK,
@@ -48,11 +45,9 @@ VOICE_MAP = {
 # -----------------------------------------------------------------------------
 # SPEED MAP: per-voice overrides, empty for now.
 #
-# Production tuned these by ear after listening to real output (assistant
-# voices raised from 0.9 to 1.0, one Cantonese voice slowed to 0.8). I
-# can't hear the six English voices from here, so this starts empty. If
-# any voice sounds too fast or slow once you test it, add an entry here
-# the same way production did.
+# I can't hear the six English voices from here, so this starts empty.
+# If any voice sounds too fast or slow once you test it, add an entry
+# here keyed by (persona, gender).
 # -----------------------------------------------------------------------------
 
 DEFAULT_SPEED = 0.9
@@ -75,14 +70,14 @@ LANGUAGE_BOOST = "English"
 # -----------------------------------------------------------------------------
 # FALLBACK VOICES
 #
-# Production falls back to two verified stable MiniMax system voices
-# (Calm_Woman, male-qn-qingse) if a primary voice ID is renamed or
-# retired. I haven't verified those two IDs work under the English
-# language_boost, so rather than guess, the demo falls back to one of
-# your own six voices per gender: assistant/female and assistant/male,
-# on the assumption a "neutral assistant" voice is the safest default
-# tone if a specific persona voice ever breaks. Swap these once you've
-# actually listened to all six and have a preference.
+# If a primary voice ID is ever renamed or retired by MiniMax, a fixed
+# fallback voice ID from their system library is one option, but that
+# requires verifying it works under the English language_boost first.
+# Rather than guess, this demo falls back to one of its own six voices
+# per gender: assistant/female and assistant/male, on the assumption a
+# "neutral assistant" voice is the safest default tone if a specific
+# persona voice ever breaks. Swap these once you've actually listened
+# to all six and have a preference.
 # -----------------------------------------------------------------------------
 
 FALLBACK_VOICES = {

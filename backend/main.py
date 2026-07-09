@@ -3,19 +3,14 @@ backend/main.py
 -----------------
 Demo app entry point.
 
-What's dropped from production, and why: production registers thirteen
-routers (activity, users, news, transcribe, profile, audio, conversation,
-history, push, speech, engagement, daily_starter, plus chat). Every one
-of them except chat depends on Supabase, S3, or a product feature this
-build doesn't have (family dashboard, medication reminders, news
-pipeline, engagement scoring persistence). There's nothing for them to
-do here, so they're not imported at all rather than imported and left
-broken.
+A fuller production app would register additional routers for
+persistent, database-backed features (profile, history, family
+features, and similar) that have no equivalent in this stateless demo,
+so they're not imported at all rather than imported and left broken.
 
-No Firebase, no local static-file mount for audio: production serves a
-/local-audio path for dev-mode file playback before S3 is configured.
-This build never writes audio to disk, TTS bytes go straight into the
-JSON response, so there's no local storage directory to serve.
+No local static-file mount for audio either: this build never writes
+audio to disk, TTS bytes go straight into the JSON response, so
+there's no local storage directory to serve.
 """
 
 import logging

@@ -4,24 +4,18 @@ backend/suggestions/chips.py
 Chip detection for the demo, trimmed to two detectors: phone numbers and
 URLs found in the AI's own reply text.
 
-Why this is much smaller than production's suggestions/engine.py and
-detectors.py:
-  Production's suggestion engine has 12 detectors covering medication
-  reminders, family contact, location sharing, weather, missing-family
-  signals, and more. Almost all of them depend on features this demo
-  doesn't have: persistent emergency contacts, medication reminders,
-  location sharing, a business-phone-lookup enrichment pipeline. Porting
-  them here would mean either faking data for features that don't exist,
-  or reimplementing product surfaces (family safety monitoring, location
-  sharing) that don't belong in a portfolio demo.
+A fuller production suggestion system would cover more detector types
+tied to persistent, database-backed features this demo doesn't have:
+emergency contacts, medication reminders, location sharing, and similar
+profile-driven signals. Porting those here would mean either faking
+data for features that don't exist, or reimplementing product surfaces
+that don't belong in a portfolio demo.
 
-  What's left after removing everything tied to features this build
-  doesn't have is exactly the two detectors requested: production's own
-  chat.py blocks 8.1 and 8.2, which scan the LLM's reply text directly
-  for a phone number or a URL, with no dependency on enrichment,
-  contacts, or profile data. Both are reimplemented here as originally
-  written regex against English text, not translated from the Chinese
-  patterns.
+What's left after removing everything tied to features this build
+doesn't have is exactly the two detectors requested: scanning the LLM's
+reply text directly for a phone number or a URL, with no dependency on
+enrichment, contacts, or profile data. Both are original regex written
+fresh for English text.
 
 Chip shape:
     {
@@ -109,8 +103,7 @@ def detect_url_chip(reply_text: str, existing_targets: set[str] | None = None) -
 def detect_chips(reply_text: str) -> list[dict]:
     """
     Run both detectors against a reply and return whatever chips were
-    found, phone first (matches production's priority: an actionable
-    phone number outranks a link).
+    found, phone first: an actionable phone number outranks a link.
     """
     chips: list[dict] = []
 

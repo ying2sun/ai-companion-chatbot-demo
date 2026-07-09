@@ -1,15 +1,8 @@
 # backend/requirements.txt
 #
-# Trimmed down from production's requirements.txt to only what this
-# demo's code actually imports. Dropped entirely: boto3 (no S3),
-# firebase_admin + google-cloud-firestore + google-cloud-storage (no
-# Firebase, nothing was using them in production either per the June 15
-# cleanup notes), supabase (no database), redis, PyJWT (no auth),
-# azure-cognitiveservices-speech, openai, trafilatura, beautifulsoup4,
-# lxml, feedparser, lxml_html_clean (news pipeline, not in this build),
-# modal (STT is Groq, not self-hosted), jieba + opencc-python-reimplemented
-# (Chinese-text-specific tooling, not needed for an English-only demo),
-# pydub (no audio format conversion, no S3 upload to convert for).
+# Trimmed to only what this demo's code actually imports: no database,
+# no cloud storage, no auth, no Chinese-text tooling, since none of
+# those are part of this build's scope.
 
 fastapi==0.136.1
 pydantic==2.13.3

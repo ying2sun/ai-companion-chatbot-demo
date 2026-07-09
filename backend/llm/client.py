@@ -1,13 +1,10 @@
 """
 backend/llm/client.py
 -----------------------
-Gemini API wiring. This file is almost entirely reused from production
-as-is, not rewritten, because it's generic API integration code (message
-format conversion, retry logic, grounding metadata extraction) with no
-Chinese-specific content in it. The only changes: comments that
-referenced production's 2-chip suggestion limit are generalized, since
-this demo's chip system is smaller but still caps around the same
-number.
+Gemini API wiring: message format conversion, retry logic, grounding
+metadata extraction, and a hand-rolled MCP function-calling round trip
+(see the comment above _UNITS_FUNCTION_DECLARATION below for why it's
+not just passed as a live MCP session).
 """
 
 from __future__ import annotations
@@ -44,16 +41,16 @@ _SEARCH_TOOL = types.Tool(google_search=types.GoogleSearch())
 # over stdio each time the tool is actually invoked.
 #
 # This does NOT pass a live MCP session into the Gemini call, on
-# purpose, an earlier version did (tools=[mcp_client.session], the
-# pattern Google's own docs and FastMCP's docs both describe), and it
-# broke in production with "cannot pickle '_asyncio.Future' object".
-# Root cause, confirmed by reading the installed SDK's own source, not
-# guessed at: generate_content() unconditionally deep-copies the whole
-# config as its very first line, before its own MCP-session-handling
-# code ever runs to strip that session back out. That handling code
-# exists and looks correct, it's just unreachable, since the crash
-# happens one line earlier. So a live session can never safely sit
-# inside a config passed to this SDK version at all.
+# purpose. An earlier version of this code did (tools=[mcp_client.session],
+# the pattern Google's own docs and FastMCP's docs both describe), and
+# it broke with "cannot pickle '_asyncio.Future' object". Root cause,
+# confirmed by reading the installed SDK's own source: generate_content()
+# unconditionally deep-copies the whole config as its very first line,
+# before its own MCP-session-handling code ever runs to strip that
+# session back out. That handling code exists and looks correct, it's
+# just unreachable, since the crash happens one line earlier. So a live
+# session can never safely sit inside a config passed to this SDK
+# version at all.
 #
 # The fix: declare the tool's schema statically (safe to copy, it's
 # just data) and handle the call-and-respond round trip by hand,

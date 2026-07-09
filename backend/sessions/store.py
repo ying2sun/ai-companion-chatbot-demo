@@ -1,14 +1,12 @@
 """
 backend/sessions/store.py
 ---------------------------
-In-memory session store. New implementation, not a port of production's
-sessions/manager.py, since that file is built entirely around Supabase
-(ai_conversations table, RPC calls, per-row UUIDs meant to survive
-across visits). This demo has no database and no persistent identity,
+In-memory session store. A production system with persistent identity
+would back this with a database and per-row IDs meant to survive
+across visits; this demo has no database and no persistent identity,
 a session exists only for the lifetime of one browser tab.
 
-Interface is shaped to match what api/chat.py needs, so the calling code
-reads the same way production's does: get_or_create(),
+Interface is shaped to match what api/chat.py needs: get_or_create(),
 build_messages_for_llm(), append_turn().
 
 TTL eviction: since there's no background worker in this lightweight
@@ -24,7 +22,7 @@ import time
 import uuid
 
 SESSION_TTL_SECONDS = 30 * 60  # 30 minutes of inactivity
-MAX_HISTORY_MESSAGES = 40      # 20 user/assistant pairs, same cap production uses
+MAX_HISTORY_MESSAGES = 40      # 20 user/assistant pairs
 
 
 class SessionStore:
@@ -47,9 +45,7 @@ class SessionStore:
 
         persona / voice_gender / display_name are intentionally NOT
         seeded here from request data. api/chat.py sets them fresh on
-        every call instead, the same way production always writes
-        profile["language"] / profile["persona"] from the current
-        request's form fields rather than trusting a value stored at
+        every call instead, rather than trusting a value stored at
         session creation. That's what makes the settings toggle feel
         live: change persona mid-conversation and the very next turn
         uses it.

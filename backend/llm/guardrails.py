@@ -4,13 +4,10 @@ backend/llm/guardrails.py
 Rule-based guardrail that runs on every message BEFORE the LLM reply is
 returned.
 
-This is an original, English-language reimplementation of the production
-guardrail's design: a deterministic regex pre-check as a fast first layer,
-with the system prompt's own safety instructions as a second line of
-defense. No production trigger phrases or override wording are carried
-over, everything below is written fresh for this demo. The Simplified to
-Traditional Chinese normalization step in the production version is
-dropped entirely, it has no equivalent need in an English-only build.
+Everything below is written fresh for this demo: a deterministic regex
+pre-check as a fast first layer, with the system prompt's own safety
+instructions as a second line of defense. This demo has no
+Chinese-language normalization step, not applicable to English.
 
 Why keyword matching instead of a second LLM call
 ---------------------------------------------------
@@ -49,9 +46,8 @@ was even started) is discarded and replaced with the override text.
 A note on this demo's trigger list
 -------------------------------------
 These patterns are a small, illustrative set, not a clinically reviewed
-production list. If you use this beyond a portfolio demo, treat this file
-as a starting point that needs real review, the same way the production
-list would have gone through iteration based on real conversations.
+list ready for real deployment. If you use this beyond a portfolio demo,
+treat this file as a starting point that needs real review.
 """
 
 import re
@@ -91,14 +87,14 @@ MEDICAL_TRIGGERS = [
     r"mix .* (medicine|medication|pills?)",
 ]
 
-# Design principle carried over from production: the redirect should feel
-# caring, not like a legal disclaimer.
+# Design principle: the redirect should feel caring, not like a legal
+# disclaimer.
 #
 # Crisis override keeps the person talking and emphasizes they're not
-# alone. It deliberately does not escalate to a family member immediately,
+# alone. It deliberately does not escalate to a family member immediately;
 # that kind of escalation belongs in a real product with a real safety
-# team behind it, not a portfolio demo. It stays present and invites the
-# person to share more, a holding response, not a risk assessment.
+# team behind it. It stays present and invites the person to share more,
+# rather than attempting any kind of risk assessment.
 #
 # Medical override is warm, redirects to a doctor, and offers a concrete
 # next step. It intentionally says nothing medical at all.

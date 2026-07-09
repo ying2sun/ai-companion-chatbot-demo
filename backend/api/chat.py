@@ -1,18 +1,15 @@
 """
 backend/api/chat.py
 ---------------------
-The demo's /chat endpoint. This is a new, much smaller implementation,
-not a port of production's api/chat.py, reflecting everything we agreed
-to cut: no JWT auth, no Supabase profile, no tier/premium features, no
-context enrichment, no profile-intent detection, no conversation
-summarization, no speech monitoring, no S3. What's left is the actual
+The demo's /chat endpoint, a small implementation with no auth,
+no database, and no persistent profile. What's left is the actual
 engineering core: transcribe (if voice), check guardrails, build the
 prompt, call the LLM, detect chips, synthesize speech, respond.
 
-The guardrail check runs before the LLM call, and skips the LLM
+The guardrail check runs before the LLM call and skips the LLM
 entirely when it fires. That avoids paying for a model call whose
-output would just be discarded, checking input before generating
-output rather than after is the standard-practice order for exactly
+output would just be discarded. Checking input before generating
+output, rather than after, is the standard-practice order for exactly
 this reason.
 
 Pipeline:
@@ -57,11 +54,9 @@ _ALLOWED_PERSONAS = {"caregiver", "assistant", "friend"}
 _ALLOWED_GENDERS = {"female", "male"}
 
 # Belt-and-suspenders cleanup in case the model ignores the no-markdown
-# instruction in the system prompt. Deliberately minimal, this is a
-# fresh, small implementation, not a port of production's
-# llm/post_processor.py, which wasn't part of the files shared for this
-# build. Strips bold/italic markers and collapses stray blank lines; it
-# does not attempt to enforce the sentence-count limit programmatically,
+# instruction in the system prompt. Deliberately minimal: strips
+# bold/italic markers and collapses stray blank lines; it does not
+# attempt to enforce the sentence-count limit programmatically,
 # truncating a reply mid-thought would do more harm than an occasional
 # over-long response.
 _MARKDOWN_RE = re.compile(r'(\*\*|\*|__|_)')
@@ -136,9 +131,8 @@ async def chat(
     session = session_store.get_or_create(session_id)
     session_id = session["session_id"]
 
-    # Applied fresh every request, same reasoning as production: settings
-    # changes should take effect on the very next turn, not require a
-    # new session.
+    # Applied fresh every request: settings changes should take effect
+    # on the very next turn, not require a new session.
     session["persona"] = persona
     session["voice_gender"] = voice_gender
     if display_name:
@@ -175,8 +169,8 @@ async def chat(
         logger.info(
             "Guardrail triggered: %s | session=%s", guardrail_result["reason"], session_id
         )
-        # No chip detection, no LLM call, matches production's rule that
-        # suggestions are cleared on a guardrail hit.
+        # No chip detection, no LLM call: suggestions are cleared on a
+        # guardrail hit.
 
     else:
         profile = {

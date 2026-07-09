@@ -1,21 +1,12 @@
 """
 backend/stt/service.py
 ------------------------
-Groq-hosted Whisper large-v3 for the demo. Same API integration as
-production, same reasoning for choosing Groq over a self-hosted or
-cold-start-prone alternative (managed API, no cold start, pay only for
-actual audio seconds).
+Groq-hosted Whisper large-v3 for the demo, chosen over a self-hosted
+or cold-start-prone alternative for a managed API with no cold start
+and billing only for actual audio seconds.
 
-What's different from production, and why:
-  Production maps two internal language names ("mandarin", "cantonese")
-  to Whisper language codes ("zh", "yue"), because the product supports
-  both. This demo is English-only, so that mapping is gone and the
-  language is hardcoded to "en" rather than kept as unused branching.
-  The Chinese-language priming prompt production sends to Whisper
-  (a short phrase hinting "an elderly person is speaking") is dropped
-  too: English is already Whisper's best-supported language, and that
-  prompt was tuned for a different language's accent and speech pattern,
-  not something to carry over by habit.
+This demo is English-only, so the language is hardcoded to "en" rather
+than kept as unused branching for other languages.
 """
 
 import logging

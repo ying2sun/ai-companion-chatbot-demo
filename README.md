@@ -17,7 +17,7 @@ This is a demo for the AI chatbot part of [PéiNín
 Foundation](https://peininfoundation.org/). I'm the AI engineer building
 that system, and put this independent, from-scratch demo together to share
 similar work publicly. The real product is at pre-launch stage. You can
-check out a web test version only, not the production experience, at
+check out an early web test build at
 [peinin-senior-care.vercel.app](https://peinin-senior-care.vercel.app/).
 
 ## Skills demonstrated
@@ -43,7 +43,7 @@ check out a web test version only, not the production experience, at
   so the model can reach for it directly while generating a reply
   instead of only being caught after the fact. Verified against the
   actual protocol, a real MCP server discovered and called through a
-  live client connection, not simulated.
+  live client connection.
 - **Evaluation methodology.** A framework built around the same
   principles as rigorous production ML evaluation: deterministic checks
   where correctness is checkable by code, an LLM judge for what genuinely
@@ -60,7 +60,7 @@ check out a web test version only, not the production experience, at
   Two independent rate-limiting layers, defensive handling of malformed
   credentials, a stateless architecture sized deliberately for a
   no-login demo rather than over-built.
-- **Real testing discipline, not just claims.** DOM-level functional
+- **Real testing discipline.** DOM-level functional
   tests for the frontend, unit and integration tests for the guardrail,
   chip detection, and the chat endpoint itself, run and passing before
   anything shipped.
@@ -79,8 +79,8 @@ currently knows about this specific conversation, left out entirely
 when there's nothing yet to add.
 
 The payoff shows up when something needs to change later. Adjusting the
-tone can't accidentally break a safety rule, because the two aren't
-sharing a paragraph, they're not even sharing a piece.
+tone can't accidentally break a safety rule, because the two live in
+genuinely separate places.
 
 ### Catching a crisis before the model ever sees it
 
@@ -149,7 +149,7 @@ case. It does nothing about a quieter one: a lot of separate people,
 each sending only a handful of messages, adding up to real cost without
 any single one of them looking like abuse.
 
-Two independent checks run here for that reason, not one. One watches
+Two independent checks run here for that reason. One watches
 each visitor. A second, unrelated to the first, watches total usage
 across everyone combined, since every message here triggers three
 separate paid API calls, and a demo project deserves a hard ceiling on
@@ -345,8 +345,8 @@ This is an independent, from-scratch implementation. No code, prompts,
 data, or content from any other codebase or product was used in building
 it.
 
-**No persistence.** Conversation history isn't stored anywhere, not in a
-database, not in a file. Everything lives in memory for the length of a
+**No persistence.** Conversation history isn't stored anywhere, no
+database, no file. Everything lives in memory for the length of a
 session and is lost on tab close, a 30-minute idle timeout, or a server
 restart, which happens automatically on this hosting tier after a period
 of inactivity. Server logs record only metadata (session IDs, timing,

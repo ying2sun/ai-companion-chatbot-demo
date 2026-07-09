@@ -6,112 +6,154 @@ speech out pipeline, and an evaluation framework to score it, built to
 demonstrate AI engineering, not to ship a product.
 
 **Live demo:** https://ying2sun.github.io/ai-companion-chatbot-demo/
+*(the first message may take up to a minute, the server is on a free
+hosting tier that goes to sleep after inactivity and has to wake back up)*
 
 ## About
 
+PéiNín Foundation is a 501(c)(3) nonprofit organization building a
+voice-first AI companion app for Mandarin- and Cantonese-speaking seniors.
 This is a demo for the AI chatbot part of [PéiNín
-Foundation](https://peininfoundation.org/). I'm the AI engineer building that
-system, and put this independent, from-scratch demo together to share
-similar work publicly. The real product is at pre-launch stage; you can
+Foundation](https://peininfoundation.org/). I'm the AI engineer building
+that system, and put this independent, from-scratch demo together to share
+similar work publicly. The real product is at pre-launch stage. You can
 check out a web test version only, not the production experience, at
 [peinin-senior-care.vercel.app](https://peinin-senior-care.vercel.app/).
 
+## Skills demonstrated
+
+- **Prompt engineering.** A layered system prompt (identity, tone,
+  session memory) instead of one large block, with enough attention to
+  exact wording that a single word choice was found, through testing, to
+  measurably change model behavior. See *How it works*.
+- **AI safety engineering.** A two-tier guardrail, deterministic pattern
+  matching backed by a model-level instruction, engineered to skip the
+  LLM call entirely when it fires. Observable live in the debug panel:
+  a guardrail-triggered turn runs in single-digit milliseconds against
+  several hundred for a normal reply.
+- **Matching computation to the task.** People often want a converted
+  figure when a reply states a measurement (e.g. pounds vs. kilograms,
+  Fahrenheit vs. Celsius), a real and common need in conversation.
+  Rather than asking the model to do that arithmetic, unreliable in a
+  way a one-line formula is not, unit conversions are detected in the
+  text and computed with plain, deterministic code, so the number
+  returned is always exactly right.
+- **Tool-calling architecture via MCP.** That same conversion logic is
+  also exposed as a real callable tool using the Model Context Protocol,
+  so the model can reach for it directly while generating a reply
+  instead of only being caught after the fact. Verified against the
+  actual protocol, a real MCP server discovered and called through a
+  live client connection, not simulated.
+- **Evaluation methodology.** A framework built around the same
+  principles as rigorous production ML evaluation: deterministic checks
+  where correctness is checkable by code, an LLM judge for what genuinely
+  requires judgment, and validating that judge against a hand-labeled
+  gold set with Cohen's kappa rather than trusting it blindly. See
+  *Evaluation*.
+- **Multi-model orchestration.** Three separate specialized APIs,
+  speech-to-text, a language model with live search grounding, and
+  text-to-speech, coordinated into one coherent, stateful conversation.
+- **Cloud infrastructure at production scale.** This demo runs on free
+  hosting suited to its purpose. The production system it's modeled on
+  runs on AWS ECS, a real, scaled deployment I also built and operate.
+- **Production-minded engineering, at the right scale for what this is.**
+  Two independent rate-limiting layers, defensive handling of malformed
+  credentials, a stateless architecture sized deliberately for a
+  no-login demo rather than over-built.
+- **Real testing discipline, not just claims.** DOM-level functional
+  tests for the frontend, unit and integration tests for the guardrail,
+  chip detection, and the chat endpoint itself, run and passing before
+  anything shipped.
+
 ## How it works
 
-### Why the system prompt is layered instead of written as one block
+### Layered instructions instead of one long prompt
 
-As a prompt accumulates rules (identity, tone, formatting constraints,
-safety behavior, context about the current session) a single unstructured
-block of instructions gets harder to edit safely over time. Every new rule
-risks colliding with an existing one, and it becomes difficult to tell, just
-by reading the prompt, which sentence is responsible for which behavior.
+The instructions given to the AI model are split into three pieces,
+assembled fresh every time a reply is generated. One piece never
+changes: what the AI is, how honest it needs to be, how a reply should
+be formatted. A second piece sets the tone for this particular
+conversation, warmer and closer, or more businesslike, and swapping it
+never touches anything else. A third piece adds whatever the system
+currently knows about this specific conversation, left out entirely
+when there's nothing yet to add.
 
-This project splits the prompt into three layers that are assembled in a
-fixed order rather than written as one document:
+The payoff shows up when something needs to change later. Adjusting the
+tone can't accidentally break a safety rule, because the two aren't
+sharing a paragraph, they're not even sharing a piece.
 
-- **A base layer**, applied to every conversation regardless of anything
-  else: identity, core behavioral rules, formatting constraints.
-- **A tone layer**, selected per session, that adjusts the relationship
-  register (for example, a closer, warmer tone versus a more neutral,
-  task-focused one) without touching anything in the base layer.
-- **A memory layer**, built fresh from whatever context exists about the
-  current session. When there's no context yet, this layer renders as an
-  empty string rather than a templated placeholder, so a brand-new session
-  gets a clean prompt with no awkward gap.
+### Catching a crisis before the model ever sees it
 
-Keeping the layers separate means each one can be edited, tested, or
-swapped independently. Changing the tone layer can't accidentally break a
-safety rule that lives in the base layer, because they're different
-functions composed together, not different paragraphs of the same text.
+Some messages need a careful response no matter what, a medication
+question, or language suggesting someone might be in crisis. Trusting
+the AI model to always catch these on its own isn't good enough. Even a
+well-instructed model follows its instructions reliably, not perfectly,
+and this is exactly the place where "reliably" isn't the bar.
 
-### Why there are two guardrail layers, not one
+So the system checks first, before the model is ever called. A specific
+set of words and phrases known to signal one of these situations gets
+checked against the message directly, and a match sends a fixed,
+careful response immediately, no model judgment involved at all. The
+model's own instructions are still there as a second line of defense
+for anything the check misses, but the cases that matter most never
+depend on it getting that right in the moment.
 
-A common approach to keeping an LLM on safe ground is a single instruction
-in the system prompt telling the model what to avoid or redirect. That
-works, but it's probabilistic: the model follows instructions with high but
-not perfect reliability, every turn pays the token and latency cost of that
-instruction whether or not it's ever needed, and when something does go
-wrong there's no way to point to the specific rule that did or didn't fire.
+### What actually happens when you talk instead of type
 
-This project runs a deterministic check first, before the language model is
-ever called. A small set of pattern-matching rules scans the person's own
-message for language associated with a small number of high-stakes
-categories. If a pattern matches, the language model call is skipped
-entirely and a fixed, pre-written response is returned instead. This layer
-is fast (sub-millisecond), free (no API call made), and fully auditable,
-every rule is a plain, readable line of code, not a probability.
+Three separate steps happen behind a spoken exchange. The recording
+gets turned into text first. That text goes to the AI model, which
+writes a reply. The reply gets turned back into audio. Three different
+jobs, three different purpose-built services handling them, rather than
+one system trying to do all three itself.
 
-Its weakness is recall: a fixed pattern list can't anticipate every way a
-person might phrase something. So the system prompt itself carries a
-second, complementary instruction as a backstop for phrasing the pattern
-layer misses. Neither layer is sufficient alone. The deterministic layer
-catches the common, high-confidence cases cheaply and predictably; the
-model-level instruction catches the long tail the patterns can't
-anticipate.
+None of those three services are built in-house here. Running that kind
+of technology yourself is real, ongoing infrastructure work, and none
+of it would make the actual conversation better, only more expensive to
+keep running. Using hosted versions instead means each one keeps
+improving on its own, without this project needing to touch it.
 
-### The voice pipeline
+### Giving the model a calculator instead of letting it guess
 
-A spoken turn moves through three separate specialized models in sequence:
-speech-to-text turns the incoming audio into a transcript, a language model
-generates a reply from that transcript plus conversation history, and
-text-to-speech turns the reply back into audio. Each stage is called
-through a managed API rather than a self-hosted model.
+Language models are good at language and unreliable at exact
+arithmetic, the same way someone doing long division in their head is
+more error-prone than someone using a calculator. Converting units is
+exactly that kind of task: the correct answer is a specific number, and
+there's no room for a plausible-sounding wrong one.
 
-That's a deliberate trade-off. Self-hosting any of these models means
-owning GPU provisioning, cold-start latency after idle periods, and scaling
-as usage grows, real infrastructure work that adds nothing to the actual
-conversation quality. Managed APIs move all of that off this codebase
-entirely, at the cost of a small amount of added per-call latency and no
-control over the exact model version in use. For a project at this stage,
-that trade favors managed APIs by a wide margin: it keeps the codebase
-focused on orchestration, and lets underlying model quality improve
-automatically as each provider updates their service, rather than the
-project being pinned to a specific self-hosted model version that only gets
-better when someone manually updates it.
+Rather than trust the model to compute a conversion itself, this
+project gives it an actual tool it can call while writing a reply, a
+small local server, built with the Model Context Protocol (MCP), that
+does the arithmetic in plain code and hands back the exact result. Ask
+directly how many pounds is 90 kilograms, and the model can reach for
+the tool instead of guessing. It's a small example of a bigger habit:
+know which parts of a task the model should own, and which parts belong
+to something actually reliable at them.
 
-### Stateless by design
+### Nothing is remembered on purpose
 
-This backend keeps no database. A conversation exists entirely in memory,
-keyed by a session ID generated client-side on page load, and is dropped on
-a time-based expiry if the session goes idle. That's a deliberately
-right-sized amount of infrastructure, not a missing feature: there's no
-account system, no login, and no reason for a conversation to outlive the
-browser tab it happened in. State doesn't survive a server restart or a
-closed tab, which would be unacceptable for a product people rely on day to
-day, but is exactly the right amount of durability for something meant to
-be tried, not depended on.
+There's no database behind this project. A conversation exists in
+memory for as long as the browser tab stays open and the session stays
+active. Closing the tab, 30 minutes of inactivity, or the server
+restarting all clear it. There's no login here, and nothing about a
+demo like this calls for remembering someone after they're done with
+it.
 
-### Two independent rate limits
+The honest trade-off: this would be a real problem for something people
+depend on daily. For something meant to be tried once, it's exactly
+enough.
 
-A single limit on requests per IP address stops one obvious source from
-overwhelming the service, but it's blind to a different failure mode: a
-slow trickle of requests arriving from many different sources, which never
-looks abusive from any single IP's perspective even as it adds up in
-aggregate. This project runs two independent checks for that reason: a
-per-IP limiter handles the first case, and a separate global counter,
-tracked independently of where requests originate, acts as a hard ceiling
-on total usage regardless of pattern. Either check can reject a request on
-its own; neither depends on the other being present.
+### Two different ways this could be overwhelmed, two different limits
+
+Limiting how often one visitor can send a message stops the obvious
+case. It does nothing about a quieter one: a lot of separate people,
+each sending only a handful of messages, adding up to real cost without
+any single one of them looking like abuse.
+
+Two independent checks run here for that reason, not one. One watches
+each visitor. A second, unrelated to the first, watches total usage
+across everyone combined, since every message here triggers three
+separate paid API calls, and a demo project deserves a hard ceiling on
+that regardless of how the usage is spread out.
 
 ## Evaluation
 
@@ -144,7 +186,7 @@ capable of it.
 If the same model family were both the system under test and its own
 judge, the judge could end up subtly favoring outputs that sound like its
 own style, a self-preference bias, rather than genuinely grading against
-the rubric. This project's chat model is Gemini; the planned judge is a
+the rubric. This project's chat model is Gemini. The planned judge is a
 different model family entirely, specifically so the grading is
 independent of the thing being graded, the same principle behind having a
 second person review work rather than letting someone grade their own
@@ -200,12 +242,15 @@ demonstrate the methodology itself.
 | Gold-set-validated LLM judge | Planned |
 | Kappa validator | Planned |
 
+Run it yourself: `python eval/checks.py` from `backend/`, no API key needed.
+
 ## Architecture
 
 | Layer | Choice | Notes |
 |---|---|---|
 | Backend | FastAPI | Stateless, in-memory session store, no database |
 | LLM | Gemini (`google-genai` SDK) | Search grounding enabled for current-events questions |
+| Tool calling | MCP (FastMCP) | Local server exposing unit conversion as a callable tool |
 | Speech-to-text | Groq (Whisper large-v3) | Managed API, no cold start |
 | Text-to-speech | MiniMax Speech-02-HD | Multiple voice and tone combinations |
 | Rate limiting | slowapi | Per-IP limit plus an independent global daily cap |
@@ -227,6 +272,8 @@ peinin-ai-demo/
 │   │   ├── client.py        # Gemini integration
 │   │   ├── guardrails.py    # safety layer
 │   │   └── prompts.py       # three-layer prompt builder
+│   ├── mcp_tools/
+│   │   └── units_server.py  # MCP server exposing unit conversion as a tool
 │   ├── sessions/
 │   │   └── store.py         # in-memory session store
 │   ├── stt/
@@ -235,13 +282,13 @@ peinin-ai-demo/
 │   │   ├── google_service.py # MiniMax integration
 │   │   └── service.py
 │   ├── suggestions/
-│   │   └── chips.py         # phone number / URL detection
+│   │   ├── chips.py         # phone number / URL detection
+│   │   └── units.py         # unit conversion detection and math
 │   ├── main.py
 │   ├── requirements.txt
 │   └── .env.example
 ├── docs/                     # frontend, served directly by GitHub Pages
 │   └── index.html
-├── postman/                  # test collection, see Testing below
 ├── .gitignore
 └── README.md
 ```
@@ -284,16 +331,6 @@ pointed there, that's what's live at the URL at the top of this README.
 conversation. It returns `reply_text`, base64-encoded TTS audio, any
 detected suggestion chips, and guardrail metadata.
 
-## Testing
-
-A Postman collection covering the happy path, both guardrail categories,
-input validation, session continuity, and rate limiting lives in
-`postman/`. Import both files, point the environment's `base_url` at your
-running server, and run the collection top to bottom.
-
-For the evaluation checks specifically, `python eval/checks.py` runs a full
-self-test with built-in fixture cases and needs no API key at all.
-
 ## Status
 
 | Component | Status |
@@ -307,6 +344,14 @@ self-test with built-in fixture cases and needs no API key at all.
 This is an independent, from-scratch implementation. No code, prompts,
 data, or content from any other codebase or product was used in building
 it.
+
+**No persistence.** Conversation history isn't stored anywhere, not in a
+database, not in a file. Everything lives in memory for the length of a
+session and is lost on tab close, a 30-minute idle timeout, or a server
+restart, which happens automatically on this hosting tier after a period
+of inactivity. Server logs record only metadata (session IDs, timing,
+character counts), never the actual message or reply text, so even the
+server's own logs don't reveal what anyone said.
 
 ## License
 

@@ -41,16 +41,58 @@ _client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 _SEARCH_TOOL = types.Tool(google_search=types.GoogleSearch())
 
 # Local MCP server (mcp_tools/units_server.py), launched as a subprocess
-# over stdio for the duration of each call. The google-genai SDK's MCP
-# support is currently marked experimental by Google, worth knowing if
-# this ever misbehaves, it's a newer code path than the rest of this
-# file. A fresh Client is constructed per call rather than sharing one
-# instance across requests, since this app can serve concurrent
-# requests and a shared client's connection isn't meant to be entered
-# from multiple calls at once. A production version would want a
-# persistent connection pool instead of paying subprocess startup cost
-# on every single turn, a reasonable next step, not done here.
+# over stdio each time the tool is actually invoked.
+#
+# This does NOT pass a live MCP session into the Gemini call, on
+# purpose, an earlier version did (tools=[mcp_client.session], the
+# pattern Google's own docs and FastMCP's docs both describe), and it
+# broke in production with "cannot pickle '_asyncio.Future' object".
+# Root cause, confirmed by reading the installed SDK's own source, not
+# guessed at: generate_content() unconditionally deep-copies the whole
+# config as its very first line, before its own MCP-session-handling
+# code ever runs to strip that session back out. That handling code
+# exists and looks correct, it's just unreachable, since the crash
+# happens one line earlier. So a live session can never safely sit
+# inside a config passed to this SDK version at all.
+#
+# The fix: declare the tool's schema statically (safe to copy, it's
+# just data) and handle the call-and-respond round trip by hand,
+# mirroring the exact pattern the SDK's own automatic function calling
+# uses internally (types.Part.from_function_response, a role='user'
+# Content carrying the result), just without the buggy live-session
+# path.
 _UNITS_MCP_SCRIPT = os.path.join(os.path.dirname(__file__), "..", "mcp_tools", "units_server.py")
+
+_UNITS_FUNCTION_DECLARATION = types.FunctionDeclaration(
+    name="convert_units",
+    description=(
+        "Convert a measurement to its natural counterpart unit. "
+        "Supported from_unit values: C, F, kg, lb, km, miles, cm. "
+        "Temperature converts to the other temperature scale. Weight "
+        "and distance convert to their common alternate unit. Height "
+        "(cm) converts to feet and inches."
+    ),
+    parameters_json_schema={
+        "type": "object",
+        "properties": {
+            "value": {"type": "number"},
+            "from_unit": {"type": "string"},
+        },
+        "required": ["value", "from_unit"],
+        "additionalProperties": False,
+    },
+)
+_UNITS_TOOL = types.Tool(function_declarations=[_UNITS_FUNCTION_DECLARATION])
+
+
+async def _execute_units_tool(args: dict) -> dict:
+    """Run the actual conversion through the real MCP protocol, a
+    fresh short-lived connection per call, same reasoning as before:
+    this app can serve concurrent requests, so connections aren't
+    shared across calls."""
+    async with MCPClient(_UNITS_MCP_SCRIPT) as client:
+        result = await client.call_tool("convert_units", args)
+        return result.data
 
 # Max source URLs to extract from grounding_metadata and return to
 # chat.py. Surfaced as chips only when the person explicitly asks for a
@@ -170,17 +212,45 @@ async def _call_once(
     """Single attempt at the Gemini API. No retry logic here."""
     system_instruction, contents = _convert_messages(messages)
 
-    units_mcp_client = MCPClient(_UNITS_MCP_SCRIPT)
+    config = types.GenerateContentConfig(
+        system_instruction=system_instruction or None,
+        max_output_tokens=max_tokens,
+        temperature=temperature,
+        top_p=0.9,
+        tools=[_SEARCH_TOOL, _UNITS_TOOL],
+        thinking_config=types.ThinkingConfig(thinking_budget=0),
+    )
 
-    async with units_mcp_client:
-        config = types.GenerateContentConfig(
-            system_instruction=system_instruction or None,
-            max_output_tokens=max_tokens,
-            temperature=temperature,
-            top_p=0.9,
-            tools=[_SEARCH_TOOL, units_mcp_client.session],
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
+    response = await _client.aio.models.generate_content(
+        model=model,
+        contents=contents,
+        config=config,
+    )
+
+    # Manual function-calling round trip. One call max, this handles a
+    # single tool invocation per turn, not chained multi-step tool use,
+    # a deliberate scope limit for what this demo actually needs.
+    function_call_part = None
+    if response.candidates and response.candidates[0].content and response.candidates[0].content.parts:
+        for part in response.candidates[0].content.parts:
+            if part.function_call:
+                function_call_part = part.function_call
+                break
+
+    if function_call_part is not None and function_call_part.name == "convert_units":
+        try:
+            tool_result = await _execute_units_tool(dict(function_call_part.args or {}))
+            func_response = {"result": tool_result}
+        except Exception as exc:
+            logger.warning("Units MCP tool call failed | args=%s | error=%s", function_call_part.args, exc)
+            func_response = {"error": str(exc)}
+
+        func_response_part = types.Part.from_function_response(
+            name=function_call_part.name, response=func_response
         )
+        contents = list(contents)
+        contents.append(response.candidates[0].content)
+        contents.append(types.Content(role="user", parts=[func_response_part]))
 
         response = await _client.aio.models.generate_content(
             model=model,

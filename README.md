@@ -278,7 +278,7 @@ ai-companion-chatbot-demo/
 │   ├── stt/
 │   │   └── service.py        # Groq Whisper integration
 │   ├── tts/
-│   │   ├── google_service.py # MiniMax integration (file name is legacy from an earlier provider)
+│   │   ├── minimax_service.py # MiniMax integration
 │   │   └── service.py
 │   ├── suggestions/
 │   │   ├── chips.py          # phone number / URL detection

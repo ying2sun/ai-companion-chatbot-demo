@@ -218,6 +218,14 @@ async def _call_once(
         temperature=temperature,
         top_p=0.9,
         tools=[_SEARCH_TOOL, _UNITS_TOOL],
+        # Gemini treats google_search (a server-side built-in tool) and
+        # function_declarations (client-side function calling)
+        # differently, and refuses to combine them in one request
+        # unless told to explicitly. Confirmed by the API's own error
+        # message, not guessed at: "Please enable
+        # tool_config.include_server_side_tool_invocations to use
+        # Built-in tools with Function calling."
+        tool_config=types.ToolConfig(include_server_side_tool_invocations=True),
         thinking_config=types.ThinkingConfig(thinking_budget=0),
     )
 

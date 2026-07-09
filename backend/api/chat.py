@@ -9,18 +9,11 @@ summarization, no speech monitoring, no S3. What's left is the actual
 engineering core: transcribe (if voice), check guardrails, build the
 prompt, call the LLM, detect chips, synthesize speech, respond.
 
-One intentional behavior change from production, flagged rather than
-silently carried over:
-
-  Production's guardrails.py docstring says the check exists to
-  "intercept before the LLM generates anything unsafe," but the real
-  chat.py runs the LLM call FIRST and only checks the guardrail
-  afterward (checking user_message, discarding whatever the LLM already
-  generated if it fires). That means a crisis message still pays for a
-  full Gemini call whose output gets thrown away. This demo runs the
-  guardrail check before the LLM call instead, and skips the LLM
-  entirely when it fires. That's both cheaper (no wasted API call) and
-  closer to what the original docstring actually describes.
+The guardrail check runs before the LLM call, and skips the LLM
+entirely when it fires. That avoids paying for a model call whose
+output would just be discarded, checking input before generating
+output rather than after is the standard-practice order for exactly
+this reason.
 
 Pipeline:
   0. Rate limit check (per-IP, then the global daily cap)
@@ -53,6 +46,7 @@ from llm.prompts import build_system_prompt
 from sessions.store import SessionStore
 from stt.service import transcribe_audio
 from suggestions.chips import detect_chips
+from suggestions.units import detect_unit_chips
 from tts.service import synthesize_reply
 
 logger = logging.getLogger(__name__)
@@ -83,7 +77,7 @@ class SuggestionItem(BaseModel):
     id: str
     label: str
     action: str
-    target: str
+    target: str | None = None
     metadata: dict = {}
 
 
@@ -203,7 +197,7 @@ async def chat(
             raise HTTPException(status_code=500, detail="llm_error") from exc
 
         reply_text = _clean_response(raw_reply)
-        suggestions_raw = detect_chips(reply_text)
+        suggestions_raw = detect_chips(reply_text) + detect_unit_chips(reply_text)
 
     latency_ms = int((time.monotonic() - t0) * 1000)
 

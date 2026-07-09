@@ -248,7 +248,7 @@ usage is spread.
 | Speech-to-text | Groq (Whisper large-v3) | Managed API, no cold start |
 | Text-to-speech | MiniMax Speech-02-HD | Multiple voice and tone combinations |
 | Rate limiting | slowapi | Per-IP limit plus an independent global daily cap |
-| Frontend | Plain HTML | No build step, no framework |
+| Frontend | Single-file HTML (CSS and JS embedded) | No build step, no framework |
 | Hosting | Render (backend) + GitHub Pages (frontend) | Free tiers |
 
 ## Project structure
@@ -360,5 +360,4 @@ thing to change.
 
 ## License
 
-Not currently licensed for reuse. If you would like to use any of this,
-open an issue.
+All rights reserved. Shared for demonstration only, not licensed for reuse or redistribution.

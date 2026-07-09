@@ -66,21 +66,21 @@
   .debug-toggle {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    border: none;
+    padding: 7px 14px;
+    border-radius: 14px;
+    border: 1px solid transparent;
     background: transparent;
     color: var(--muted);
     font-family: "SF Mono", Consolas, monospace;
-    font-size: 13px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     cursor: pointer;
     margin-left: 4px;
   }
 
-  .debug-toggle:hover { background: rgba(0,0,0,0.04); color: var(--ink); }
-  .debug-toggle.active { color: var(--harbor); }
+  .debug-toggle:hover { background: rgba(0,0,0,0.04); color: var(--ink); border-color: var(--sand); }
+  .debug-toggle.active { color: var(--harbor); border-color: var(--harbor-border); background: var(--harbor-soft); }
 
   .debug-panel {
     flex-shrink: 0;
@@ -288,7 +288,15 @@
     flex-shrink: 0;
   }
 
-  .voice-duration { font-size: 13px; color: var(--ink); }
+  .voice-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--harbor);
+    opacity: 0.45;
+    flex-shrink: 0;
+  }
+
+  .voice-duration { font-size: 13px; color: var(--ink); flex-shrink: 0; }
 
   /* ---------- Chips ---------- */
 
@@ -496,7 +504,7 @@
         <path d="M19 12H5M12 19l-7-7 7-7"/>
       </svg>
     </a>
-    <button id="debugToggle" class="debug-toggle" aria-label="Toggle debug info" title="Debug info">{ }</button>
+    <button id="debugToggle" class="debug-toggle" aria-label="Toggle debug info" title="Debug info">Debug panel</button>
   </div>
   <button id="personaPill" class="persona-pill" aria-haspopup="true" aria-expanded="false">
     AI Companion <span class="chevron">&#9662;</span>
@@ -713,6 +721,14 @@
     return row;
   }
 
+  function computeVoiceBarWidth(durationSeconds) {
+    const minWidth = 40;
+    const maxWidth = 220;
+    const clamped = Math.max(0, Math.min(durationSeconds, MAX_RECORD_SECONDS));
+    const ratio = clamped / MAX_RECORD_SECONDS;
+    return Math.round(minWidth + (maxWidth - minWidth) * ratio);
+  }
+
   function appendVoiceBubble(durationSeconds) {
     const row = document.createElement("div");
     row.className = "row from-user";
@@ -720,8 +736,10 @@
     wrap.className = "bubble-wrap";
     const bubble = document.createElement("div");
     bubble.className = "voice-bubble";
+    const barWidth = computeVoiceBarWidth(durationSeconds);
     bubble.innerHTML =
       '<button class="voice-play-btn" aria-label="Voice message"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>' +
+      '<span class="voice-bar" style="width:' + barWidth + 'px"></span>' +
       '<span class="voice-duration">' + formatDuration(durationSeconds) + "</span>";
     wrap.appendChild(bubble);
     row.appendChild(wrap);

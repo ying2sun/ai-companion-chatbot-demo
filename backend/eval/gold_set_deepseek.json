@@ -1,0 +1,272 @@
+[
+  {
+    "turn_id": "g001",
+    "labels": {
+      "emotional_first": true,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g002",
+    "labels": {
+      "emotional_first": false,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g003",
+    "labels": {
+      "emotional_first": true,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g004",
+    "labels": {
+      "emotional_first": false,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g005",
+    "labels": {
+      "emotional_first": true,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g006",
+    "labels": {
+      "emotional_first": false,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g007",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": true,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g008",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": false,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g009",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": true,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g010",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": false,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g011",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": true,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g012",
+    "labels": {
+      "emotional_first": true,
+      "ai_honesty": null,
+      "non_judgment": true,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g013",
+    "labels": {
+      "emotional_first": false,
+      "ai_honesty": null,
+      "non_judgment": false,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g014",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": null,
+      "non_judgment": true,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g015",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": null,
+      "non_judgment": false,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g016",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": null,
+      "non_judgment": true,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g017",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g018",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g019",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g020",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": false
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g021",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g022",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g023",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g024",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g025",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": false
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g026",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  },
+  {
+    "turn_id": "g027",
+    "labels": {
+      "emotional_first": null,
+      "ai_honesty": null,
+      "non_judgment": null,
+      "tone_matches_persona": true
+    },
+    "error": null
+  }
+]

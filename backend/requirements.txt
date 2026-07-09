@@ -24,3 +24,6 @@ google-genai>=1.0.0
 fastmcp
 
 slowapi
+
+# eval/judge.py only, the chat backend itself uses Gemini, not Claude
+anthropic

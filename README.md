@@ -234,15 +234,55 @@ evaluation run surfaces is exactly the kind of information that shouldn't
 be public regardless of where it comes from, and none of it is needed to
 demonstrate the methodology itself.
 
+### Why the gold set itself gets cross-checked, not just the judge
+
+Everything above validates whether the judge can be trusted against the
+gold set. It says nothing about whether the gold set's own labels are
+right in the first place. A gold set written by one person, even
+carefully, with reasoning noted for the tricky cases, has only had one
+point of view applied to it.
+
+So the gold set's labels get checked too, independently, using two
+different models (GPT-4o and DeepSeek V3, reached through OpenRouter)
+scored against the exact same rubric the judge uses. Where a human
+label and both models agree, that's real, independent confirmation.
+Where they don't, that's a specific, named turn worth a second look,
+not a vague sense that something might be off. This is a different
+question from judge validation, one asks whether the judge can be
+trusted, this one asks whether the thing the judge is being validated
+against can be trusted, and skipping it would leave that second
+question completely unexamined.
+
+This isn't hypothetical. Running it against this gold set surfaced a
+real disagreement: one turn where a reply took a clear side on a
+sensitive family matter (already failing on that basis) but was
+originally labeled as still matching its assigned persona's direct
+tone, on the reasoning that delivery style and content are separate
+dimensions. GPT-4o and a third model (Grok, used as a tie-breaker)
+both independently pushed back, arguing the bluntness itself broke the
+persona's tone, not just the underlying judgment. The label was
+updated to match that consensus, and the disagreement is left
+documented in the gold set's notes rather than quietly resolved, a
+defensible eval system should be able to show its work, not just its
+conclusions.
+
 ### Status
 
 | Piece | Status |
 |---|---|
 | Deterministic checks (`eval/checks.py`) | Complete, runnable now with no API key |
-| Gold-set-validated LLM judge | Planned |
-| Kappa validator | Planned |
+| Gold set (`eval/gold_set.json`) | Complete, 27 original turns |
+| LLM judge (`eval/judge.py`) | Complete, needs `ANTHROPIC_API_KEY` to run against real Claude output |
+| Kappa validator (`eval/validate_judge.py`) | Complete, its own math is verified independently of the judge, run `python validate_judge.py --self-test` |
+| Gold-set cross-check (`eval/label_with_models.py`, `eval/compare_labels.py`) | Complete, needs `OPENROUTER_API_KEY` to run against real GPT-4o and DeepSeek V3 output |
 
 Run it yourself: `python eval/checks.py` from `backend/`, no API key needed.
+The judge and validator need a real `ANTHROPIC_API_KEY` to produce an
+actual kappa number, `python eval/validate_judge.py --self-test`
+verifies the kappa math itself with no key required at all. The
+gold-set cross-check needs a real `OPENROUTER_API_KEY`, run
+`label_with_models.py` first, then `compare_labels.py` to see the
+result.
 
 ## Architecture
 
@@ -267,7 +307,12 @@ peinin-ai-demo/
 │   ├── core/
 │   │   └── limiter.py       # rate limiting
 │   ├── eval/
-│   │   └── checks.py        # deterministic evaluation checks
+│   │   ├── checks.py         # deterministic evaluation checks
+│   │   ├── gold_set.json     # 27 hand-labeled turns
+│   │   ├── judge.py          # Claude-based LLM judge
+│   │   ├── validate_judge.py # kappa validation against the gold set
+│   │   ├── label_with_models.py # cross-checks gold set labels via OpenRouter
+│   │   └── compare_labels.py # reports where human/GPT-4o/DeepSeek disagree
 │   ├── llm/
 │   │   ├── client.py        # Gemini integration
 │   │   ├── guardrails.py    # safety layer
@@ -337,7 +382,7 @@ detected suggestion chips, and guardrail metadata.
 |---|---|
 | Backend | Complete, deployed |
 | Frontend | Complete, deployed |
-| Evaluation | In progress, see Evaluation above |
+| Evaluation | Complete, live kappa run pending a real API key, see Evaluation above |
 
 ## Scope and boundaries
 

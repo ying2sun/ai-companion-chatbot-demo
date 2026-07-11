@@ -167,6 +167,11 @@ itself broke the persona's tone. The label was updated to that consensus,
 and the disagreement is left documented in the gold set's notes rather
 than quietly resolved.
 
+>**Note:** Worth naming as a pattern, not just a single flip: all four disagreements between DeepSeek V3 and the other two raters ran in the same direction,
+>DeepSeek always the more lenient one on tone_matches_persona, never the stricter one. That lines up with a separate observation from unrelated cross-model
+>labeling work on a different set of conversations in a different language: DeepSeek V3's strength there was language-specific and did not transfer to judging English tone.
+>One dataset alone would just be an anecdote. Seeing the same lean on two independent, unrelated projects is a small but real signal that this is a property of the model, not noise in either gold set.
+
 ### Scope of what is shared
 
 This framework demonstrates the same structure as the evaluation system I
@@ -177,6 +182,12 @@ demo. Nothing is drawn from real conversations or real production
 findings. One further boundary worth naming: replies grounded by live
 search are not independently fact-verified in this demo. That
 verification layer is deliberately out of scope here.
+
+> **Note:** One more boundary, this time about what stage the evaluation work itself is at.
+> The framework here validates the judge and the checks, the same foundation behind PéiNín's own evaluation system.
+> It stops there. The next step, a synthetic-persona simulator generating varied conversations against the live /chat endpoint,
+> plus a fixed bank of seeded probe inputs and a driver loop tying the two together, is designed but not yet built here.
+> That piece will be added to this demo after it is completed and proven out on PéiNín's production system first.
 
 ## How it works
 
